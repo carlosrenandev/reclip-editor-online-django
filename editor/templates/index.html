@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>ReClip - Editor de Vídeo Online</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#7c3aed"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-zinc-950 text-white min-h-screen overflow-x-hidden">
+
+    <!-- HEADER -->
+    <header class="border-b border-zinc-800 sticky top-0 z-50 bg-zinc-950/90 backdrop-blur">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+
+            <!-- LOGO -->
+            <a href="{% url 'home' %}">
+                <div class="flex items-center gap-3 min-w-0">
+
+                    <div
+                        class="w-10 h-10 flex-shrink-0 rounded-xl bg-primary flex items-center justify-center font-bold text-lg">
+                        R
+                    </div>
+
+                    <div class="truncate">
+                        <h1 class="text-lg sm:text-xl font-bold truncate">
+                            ReClip
+                        </h1>
+
+                        <p class="text-xs sm:text-sm text-zinc-400 truncate">
+                            Editor de vídeos online
+                        </p>
+                    </div>
+
+                </div>
+            </a>
+
+
+            <!-- NAV -->
+            <nav class="hidden md:flex items-center gap-8 text-base text-zinc-300">
+                <a href="#" class="hover:text-white transition">
+                    Home
+                </a>
+
+                <a href="#sobre" class="hover:text-white transition">
+                    Sobre
+                </a>
+            </nav>
+
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-24">
+
+        <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+            <!-- LEFT -->
+            <div class="order-2 lg:order-1">
+
+                <div
+                    class="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 mb-6 w-full sm:w-auto justify-center sm:justify-start">
+
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+
+                    <span class="text-xs sm:text-sm text-zinc-300 text-center sm:text-left">
+                        Edição rápida diretamente no navegador
+                    </span>
+
+                </div>
+
+                <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-center lg:text-left">
+                    Edite seus vídeos
+                    <span class="text-primary">
+                        online
+                    </span>
+                    em segundos
+                </h2>
+
+                <p class="text-zinc-400 text-base sm:text-lg mt-6 leading-relaxed text-center lg:text-left">
+                    Corte vídeos, remova áudio e exporte tudo com rapidez.
+                    Sem instalar programas pesados.
+                </p>
+
+            </div>
+
+            <!-- RIGHT -->
+            <div class="order-1 lg:order-2">
+
+                <!-- EXIBIR MENSAGEM DE ERRO -->
+                {% if error %}
+                <div class="mb-6 bg-red-900/30 border border-red-700 rounded-2xl p-4">
+                    <p class="text-red-200 text-sm font-medium">{{ error }}</p>
+                </div>
+                {% endif %}
+
+                <!-- EXIBIR VÍDEO PROCESSADO -->
+                {% if video_url %}
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-2xl">
+
+                    <div class="text-center mb-6">
+                        <span
+                            class="inline-flex items-center gap-2 bg-green-900/30 border border-green-700 rounded-full px-4 py-2">
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                            <span class="text-sm text-green-200">Vídeo processado com sucesso!</span>
+                        </span>
+                    </div>
+
+                    <video controls class="w-full rounded-2xl border border-zinc-800 mb-6 bg-black">
+                        <source src="{{ video_url }}" type="video/mp4">
+                        Seu navegador não suporta vídeo.
+                    </video>
+
+                    <a href="{{ video_url }}" download
+                        class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 transition py-4 rounded-xl font-bold text-base sm:text-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Baixar vídeo
+                    </a>
+
+                    <a href="{% url 'home' %}"
+                        class="mt-5 w-full flex items-center justify-center gap-2 bg-primary hover:bg-violet-700 transition py-4 rounded-xl font-bold text-base sm:text-lg">Editar
+                        outro vídeo</a>
+
+                </div>
+                {% else %}
+
+                <form method="POST" enctype="multipart/form-data"
+                    class="w-full max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
+
+                    {% csrf_token %}
+
+                    <!-- VIDEO AREA -->
+                    <div
+                        class="bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center relative">
+
+                        <!-- VIDEO -->
+                        <video id="preview" class="w-full h-full object-contain hidden" controls playsinline></video>
+
+                        <!-- PLACEHOLDER -->
+                        <div id="placeholder"
+                            class="flex flex-col items-center justify-center text-center px-4 sm:px-6 py-10 w-full">
+
+                            <div
+                                class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-zinc-800 flex items-center justify-center mb-5 hidden md:flex">
+
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-10 sm:h-10 text-zinc-400"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14.752 11.168l-5.197-3.03A1 1 0 008 9v6a1 1 0 001.555.832l5.197-3.03a1 1 0 000-1.664z" />
+                                </svg>
+
+                            </div>
+
+                            <h3 class="text-lg sm:text-xl font-bold mb-2">
+                                Faça upload do seu vídeo
+                            </h3>
+
+                            <p class="text-zinc-400 text-sm sm:text-base mb-6">
+                                Arraste um arquivo ou clique abaixo
+                            </p>
+
+                            <!-- INPUT -->
+                            <label
+                                class="inline-flex w-full sm:w-auto justify-center items-center gap-2 bg-primary hover:bg-violet-700 transition px-5 py-3 rounded-xl cursor-pointer font-medium text-sm sm:text-base">
+
+                                Selecionar vídeo
+
+                                <input type="file" id="videoInput" name="video" accept="video/*" class="hidden"
+                                    required />
+
+                            </label>
+
+                        </div>
+
+                    </div>
+
+                    <!-- CONTROLS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+
+                        <!-- START -->
+                        <!-- INÍCIO -->
+                        <div class="w-full">
+
+                            <label class="text-sm text-zinc-400 block mb-2">
+                                Início (mm:ss)
+                            </label>
+
+                            <input type="text" name="start" placeholder="0:00"
+                                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm sm:text-base outline-none focus:border-primary"
+                                required />
+
+                        </div>
+
+                        <!-- FIM -->
+                        <div class="w-full">
+
+                            <label class="text-sm text-zinc-400 block mb-2">
+                                Fim (mm:ss)
+                            </label>
+
+                            <input type="text" name="end" placeholder="3:22"
+                                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm sm:text-base outline-none focus:border-primary"
+                                required />
+
+                        </div>
+
+                    </div>
+
+                    <!-- AUDIO -->
+                    <div
+                        class="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+
+                        <div class="min-w-0">
+
+                            <h4 class="font-semibold text-sm sm:text-base">
+                                Remover áudio
+                            </h4>
+
+                            <p class="text-xs sm:text-sm text-zinc-400 mt-1">
+                                Exportar vídeo sem som
+                            </p>
+
+                        </div>
+
+                        <input type="checkbox" name="remove_audio" class="w-5 h-5 accent-primary flex-shrink-0" />
+
+                    </div>
+
+                    <!-- BUTTON -->
+                    <button type="submit" id="submitBtn"
+                        class="w-full mt-6 bg-primary hover:bg-violet-700 active:scale-[0.98] transition py-4 rounded-xl font-bold text-sm sm:text-base lg:text-lg">
+
+                        Exportar vídeo
+
+                    </button>
+
+                    <!-- RESULT -->
+                    {% if video_url %}
+
+                    <div class="mt-6">
+
+                        <video controls class="w-full rounded-2xl border border-zinc-800">
+
+                            <source src="{{ video_url }}" type="video/mp4">
+
+                        </video>
+
+                        <a href="{{ video_url }}" download
+                            class="w-full inline-flex justify-center items-center mt-4 bg-green-600 hover:bg-green-700 transition py-4 rounded-xl font-bold text-sm sm:text-base">
+
+                            Baixar vídeo
+
+                        </a>
+
+                    </div>
+
+                    {% endif %}
+
+                </form>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ABOUT -->
+    <section class="border-t border-zinc-900" id="sobre">
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+                <!-- TEXT -->
+                <div>
+
+                    <div
+                        class="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 mb-6">
+
+                        <span class="w-2 h-2 rounded-full bg-primary"></span>
+
+                        <span class="text-sm text-zinc-300">
+                            Sobre a plataforma
+                        </span>
+
+                    </div>
+
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight">
+                        Edição de vídeo
+                        <span class="text-primary">
+                            simples, rápida
+                        </span>
+                        e online
+                    </h2>
+
+                    <p class="text-zinc-400 text-base sm:text-lg leading-relaxed mt-6">
+                        O ReClip foi criado para facilitar tarefas básicas
+                        de edição sem precisar instalar programas pesados.
+                    </p>
+
+                    <!-- STATS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10">
+
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-center">
+                            <h3 class="text-3xl font-black text-primary">
+                                100%
+                            </h3>
+
+                            <p class="text-zinc-400 text-sm mt-2">
+                                Online
+                            </p>
+                        </div>
+
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-center">
+                            <h3 class="text-3xl font-black text-primary">
+                                Rápido
+                            </h3>
+
+                            <p class="text-zinc-400 text-sm mt-2">
+                                Processamento
+                            </p>
+                        </div>
+
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-center">
+                            <h3 class="text-3xl font-black text-primary">
+                                Fácil
+                            </h3>
+
+                            <p class="text-zinc-400 text-sm mt-2">
+                                De usar
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- CARD -->
+                <div>
+
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-8">
+
+                        <div class="flex items-start sm:items-center justify-between gap-4 mb-8">
+
+                            <div>
+                                <h3 class="text-xl sm:text-2xl font-bold">
+                                    Como funciona?
+                                </h3>
+
+                                <p class="text-zinc-400 mt-2 text-sm sm:text-base">
+                                    Edite vídeos em poucos passos
+                                </p>
+                            </div>
+
+                            <div
+                                class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary flex items-center justify-center text-xl sm:text-2xl font-black flex-shrink-0">
+                                R
+                            </div>
+
+                        </div>
+
+                        <!-- STEPS -->
+                        <div class="space-y-4">
+
+                            <div class="flex gap-4 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-5">
+
+                                <div
+                                    class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary flex items-center justify-center font-bold flex-shrink-0">
+                                    1
+                                </div>
+
+                                <div>
+                                    <h4 class="font-bold text-base sm:text-lg">
+                                        Faça upload
+                                    </h4>
+
+                                    <p class="text-zinc-400 text-sm mt-1">
+                                        Selecione um vídeo do dispositivo.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div class="flex gap-4 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-5">
+
+                                <div
+                                    class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary flex items-center justify-center font-bold flex-shrink-0">
+                                    2
+                                </div>
+
+                                <div>
+                                    <h4 class="font-bold text-base sm:text-lg">
+                                        Edite facilmente
+                                    </h4>
+
+                                    <p class="text-zinc-400 text-sm mt-1">
+                                        Corte trechos e remova o áudio.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div class="flex gap-4 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-5">
+
+                                <div
+                                    class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary flex items-center justify-center font-bold flex-shrink-0">
+                                    3
+                                </div>
+
+                                <div>
+                                    <h4 class="font-bold text-base sm:text-lg">
+                                        Exporte o resultado
+                                    </h4>
+
+                                    <p class="text-zinc-400 text-sm mt-1">
+                                        Baixe o vídeo rapidamente.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- FEATURES -->
+    <section class="border-t border-zinc-900" id="recursos">
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+
+            <div class="text-center mb-12">
+
+                <h2 class="text-3xl sm:text-4xl font-black">
+                    Recursos principais
+                </h2>
+
+                <p class="text-zinc-400 mt-4 text-sm sm:text-base">
+                    Tudo que você precisa para edição básica
+                </p>
+
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-3">
+                        Corte rápido
+                    </h3>
+
+                    <p class="text-zinc-400">
+                        Escolha início e fim facilmente.
+                    </p>
+                </div>
+
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-3">
+                        Remover áudio
+                    </h3>
+
+                    <p class="text-zinc-400">
+                        Exporte vídeos silenciosos.
+                    </p>
+                </div>
+
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-3">
+                        Sem instalação
+                    </h3>
+
+                    <p class="text-zinc-400">
+                        Tudo funciona no navegador.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <footer class="border-t border-zinc-900 mt-20">
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+            <p class="text-center text-sm text-zinc-500">
+                Criado por
+                <a href="https://github.com/carlosrenandev" target="_blank" class="text-primary font-semibold">Renan</a>
+            </p>
+
+        </div>
+
+    </footer>
+
+    <script>
+        const input = document.getElementById("videoInput");
+        const preview = document.getElementById("preview");
+        const placeholder = document.getElementById("placeholder");
+        const submitBtn = document.getElementById("submitBtn");
+
+        input.addEventListener("change", function () {
+            const file = this.files[0];
+
+            if (file) {
+                // Validar tamanho (máx 500MB)
+                const maxSize = 500 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert('Arquivo muito grande! Máximo 500MB.');
+                    this.value = '';
+                    return;
+                }
+
+                const videoURL = URL.createObjectURL(file);
+                preview.src = videoURL;
+                preview.classList.remove("hidden");
+                placeholder.classList.add("hidden");
+            }
+        });
+
+        // Adicionar feedback visual ao enviar
+        document.querySelector('form').addEventListener('submit', function () {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processando...';
+        });
+
+        // Drag and drop
+        const videoArea = document.querySelector('.aspect-video');
+
+        videoArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            videoArea.classList.add('border-primary', 'bg-zinc-800/50');
+        });
+
+        videoArea.addEventListener('dragleave', () => {
+            videoArea.classList.remove('border-primary', 'bg-zinc-800/50');
+        });
+
+        videoArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            videoArea.classList.remove('border-primary', 'bg-zinc-800/50');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                input.files = files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    </script>
+
+</body>
+
+</html>
